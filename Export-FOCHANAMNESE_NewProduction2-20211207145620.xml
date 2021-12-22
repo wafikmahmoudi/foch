@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Export generator="Cache" version="25" zv="Cache for UNIX (Ubuntu Server LTS for x86-64) 2017.1.3 (Build 319_6U)" ts="2021-12-07 14:58:36">
-<Project name="EnsExportProduction_2021-12-07 14-57-57_023+0" LastModified="2021-12-07 14:58:36.520085">
-  <ProjectDescription>Studio Project generated from Ensemble Production 'FOCHANAMNESE.NewProduction2' at 2021-12-07 14:57:57.023 UTC</ProjectDescription>
+<Export generator="Cache" version="25" zv="Cache for UNIX (Ubuntu Server LTS for x86-64) 2017.1.3 (Build 319_6U)" ts="2021-12-22 13:03:26">
+<Project name="EnsExportProduction_2021-12-22 13-02-00_155+0" LastModified="2021-12-22 13:03:26.247448">
+  <ProjectDescription>Studio Project generated from Ensemble Production 'FOCHANAMNESE.NewProduction2' at 2021-12-22 13:02:00.155 UTC</ProjectDescription>
   <Items>
     <ProjectItem name="FOCHANAMNESE.RouteurSIU12RoutingRule" type="CLS"></ProjectItem>
     <ProjectItem name="User.AnamneseAPISIU" type="CLS"></ProjectItem>
@@ -11,7 +11,7 @@
     <ProjectItem name="Settings:InputSIU.PTD" type="PTD"></ProjectItem>
     <ProjectItem name="Settings:Routeur_SIU12.PTD" type="PTD"></ProjectItem>
     <ProjectItem name="Settings:getTokenBS.PTD" type="PTD"></ProjectItem>
-    <ProjectItem name="EnsExportNotes.EnsExportProduction_2021-12-07 14-57-57_023+0.PTD" type="PTD"></ProjectItem>
+    <ProjectItem name="EnsExportNotes.EnsExportProduction_2021-12-22 13-02-00_155+0.PTD" type="PTD"></ProjectItem>
   </Items>
 </Project>
 
@@ -48,7 +48,7 @@
 
 <Class name="User.AnamneseAPISIU">
 <Super>Ens.BusinessOperation</Super>
-<TimeChanged>66085,53522.708675</TimeChanged>
+<TimeChanged>66100,46323.430147</TimeChanged>
 <TimeCreated>66073,52984.962135</TimeCreated>
 
 <Parameter name="ADAPTER">
@@ -60,7 +60,7 @@
 </Property>
 
 <Parameter name="SETTINGS">
-<Default>FilePath,Email,SSL</Default>
+<Default>FilePath,Email,SSL,ServerHTTP,URL,ServerHTTPToken,URLToken</Default>
 </Parameter>
 
 <Property name="FilePath">
@@ -74,6 +74,26 @@
 </Property>
 
 <Property name="SSL">
+<Type>%String</Type>
+<Parameter name="MAXLEN" value="1000"/>
+</Property>
+
+<Property name="ServerHTTPToken">
+<Type>%String</Type>
+<Parameter name="MAXLEN" value="1000"/>
+</Property>
+
+<Property name="URLToken">
+<Type>%String</Type>
+<Parameter name="MAXLEN" value="1000"/>
+</Property>
+
+<Property name="ServerHTTP">
+<Type>%String</Type>
+<Parameter name="MAXLEN" value="1000"/>
+</Property>
+
+<Property name="URL">
 <Type>%String</Type>
 <Parameter name="MAXLEN" value="1000"/>
 </Property>
@@ -116,9 +136,11 @@
 				
           do ##class(%File).Delete(repertoire)
    
-		   
-		     set request.Server="orl.preprod.anamnese.me"
-             set status=request.Post("/api/consultation_hl7")  
+		       //set request.Server="orl.preprod.anamnese.me"
+             //set status=request.Post("/api/consultation_hl7") 
+             
+		     set request.Server= ..ServerHTTP
+             set status=request.Post(..URL)  
                D request.HttpResponse.OutputToDevice() 
              $$$LOGINFO("test0      "_status)
 
@@ -135,6 +157,8 @@
 		    //  $$$LOGINFO("objet "_jsonEvent)
 		
 		     $$$LOGINFO("resultat "_objet)
+		     set x = $FIND(objet,"Motif")
+             $$$LOGINFO("x : "_x)
 		
              
              if (request.HttpResponse.StatusCode = 401)
@@ -143,19 +167,25 @@
              Set request=##class(%Net.HttpRequest).%New()
 		     set HttpResponse=##class(%Net.HttpResponse).%New() 
 		     set request.ContentType=("application/json; charset=UTF-8") 
-		     set request.SSLConfiguration="testWafik"
+		     set request.SSLConfiguration=..SSL
 		      $$$LOGINFO("hello2")
 		     set request.Https=1
 		    
 		     set Jsonbody={}
-		     set Jsonbody.username = "wafik.mahmoudi@synodis.fr_foch"
-		      set Jsonbody.password = "Wafik1990"
+		     //set Jsonbody.username = "wafik.mahmoudi@synodis.fr_foch"
+		      //set Jsonbody.password = "Wafik1990"
+		      		    SET cr=##class(Ens.Config.Credentials).%OpenId("CredentialsLogin")
+			SET UserName=cr.Username
+			SET Password=cr.Password
+			
+		     set Jsonbody.username = UserName
+		      set Jsonbody.password = cr.Password
 		      do request.EntityBody.Write(Jsonbody.%ToJSON())
 		     
 		     
-		     set request.Server="preprod.anamnese.me"
+		     set request.Server=..ServerHTTPToken
      
-             set status=request.Post("/api/token/")
+             set status=request.Post(..URLToken)
              $$$LOGINFO("test"_status)
              Set Result = [].%FromJSON(request.HttpResponse.Data)
             $$$LOGINFO("Data retrieved :"_Result.%ToJSON())
@@ -173,7 +203,7 @@
 
 		      $$$LOGINFO("hello2")
 		     set request.Https=1
-		    set request.SSLConfiguration="testWafik"
+		    set request.SSLConfiguration=..SSL
 		   
 		   Set request.Authorization=("Bearer " _token)
 		   Set sc=request.SetHeader("Content-Disposition","attachment; filename=siu.hl7")
@@ -195,17 +225,23 @@
           do ##class(%File).Delete(repertoire)
    
 		   
-		     set request.Server="orl.preprod.anamnese.me"
-             set status=request.Post("/api/consultation_hl7")  
+		     set request.Server= ..ServerHTTP
+             set status=request.Post(..URL)  
                D request.HttpResponse.OutputToDevice() 
              $$$LOGINFO("test      "_status)
              //Set Result = [].%FromJSON(request.HttpResponse.Data)
            //$$$LOGINFO("resultat :"_Result.%ToJSON())
             $$$LOGINFO("test      "_request.HttpResponse)
-              //$$$LOGINFO("test      "_request.HttpResponse.Data.Read())
+              ///$$$LOGINFO("test3      "_request.HttpResponse.Data.Read())
                 $$$LOGINFO("test      "_request.HttpResponse.StatusCode)
                 
                  set objet = request.HttpResponse.Data.Read()
+                  $$$LOGINFO("objet : "_objet)
+                 set x = $FIND(objet,"Motif")
+                 $$$LOGINFO("x : "_x)
+                       if (request.HttpResponse.StatusCode '= 200)
+             {
+           
               set alertRequest = ##class(Ens.AlertRequest).%New()  
                $$$LOGINFO("ddddddddddddddddddddddddd"_objet)
 			  set alertRequest.SourceConfigName = request.HttpResponse.StatusCode
@@ -215,7 +251,20 @@
 			   do ..SendRequestSync("Email",alertRequest,.pOutput)  
 			   
 			   $$$LOGINFO("Emailllllll envoyé dans le 401")
-		
+		}
+		               if ((request.HttpResponse.StatusCode = 200) && (x>2))
+             {
+           
+              set alertRequest = ##class(Ens.AlertRequest).%New()  
+               $$$LOGINFO("ddddddddddddddddddddddddd"_objet)
+			  set alertRequest.SourceConfigName = request.HttpResponse.StatusCode
+			  set alertRequest.AlertDestination = ..Email
+			   //set alertRequest.AlertText = pInput.RawContent
+			   set alertRequest.AlertText = objet
+			   do ..SendRequestSync("Email",alertRequest,.pOutput)  
+			   
+			   $$$LOGINFO("Emailllllll envoyé dans le 401 dans le 200 et x>2")
+		}
 		
 		    $$$LOGINFO("resultat ")
              }
@@ -223,6 +272,24 @@
              
            ELSE
              {
+         	  if ((request.HttpResponse.StatusCode = 200) && (x>2))
+             {
+           
+              set alertRequest = ##class(Ens.AlertRequest).%New()  
+               $$$LOGINFO("ddddddddddddddddddddddddd"_objet)
+			  set alertRequest.SourceConfigName = request.HttpResponse.StatusCode
+			  set alertRequest.AlertDestination = ..Email
+			   //set alertRequest.AlertText = pInput.RawContent
+			   set alertRequest.AlertText = objet
+			   do ..SendRequestSync("Email",alertRequest,.pOutput)  
+			   
+			   $$$LOGINFO("Emailllllll envoyé dans le 401 dans le 200 et x>2")
+		}
+             ELSE
+              {
+               if ((request.HttpResponse.StatusCode '= 200))
+             {
+           
                set alertRequest = ##class(Ens.AlertRequest).%New()
               
                $$$LOGINFO("ddddddddddddddddddddddddd"_objet)
@@ -233,9 +300,10 @@
 			   do ..SendRequestSync("Email",alertRequest,.pOutput)  
 			   
 			   $$$LOGINFO("Emailllllll envoyé")
+			   }
 			          	
           	}
-             
+             }
              
              
              
@@ -268,7 +336,7 @@
 
 <Class name="User.AnamnesegetToken">
 <Super>Ens.BusinessService</Super>
-<TimeChanged>66085,51248.364543</TimeChanged>
+<TimeChanged>66093,58375.956403</TimeChanged>
 <TimeCreated>66073,45603.521599</TimeCreated>
 
 <Parameter name="ADAPTER">
@@ -276,7 +344,7 @@
 </Parameter>
 
 <Parameter name="SETTINGS">
-<Default>TargetConfigNames,SSL</Default>
+<Default>TargetConfigNames,SSL,ServerHTTP,URL</Default>
 </Parameter>
 
 <Property name="TargetConfigNames">
@@ -285,6 +353,16 @@
 </Property>
 
 <Property name="SSL">
+<Type>%String</Type>
+<Parameter name="MAXLEN" value="1000"/>
+</Property>
+
+<Property name="ServerHTTP">
+<Type>%String</Type>
+<Parameter name="MAXLEN" value="1000"/>
+</Property>
+
+<Property name="URL">
 <Type>%String</Type>
 <Parameter name="MAXLEN" value="1000"/>
 </Property>
@@ -319,9 +397,14 @@
 		      do request.EntityBody.Write(Jsonbody.%ToJSON())
 		     
 		     
-		     set request.Server="preprod.anamnese.me"
+		     //set request.Server="preprod.anamnese.me"
      
-             set status=request.Post("/api/token/")
+             //set status=request.Post("/api/token/")
+             
+		     set request.Server=..ServerHTTP
+     
+             set status=request.Post(..URL)
+             
              $$$LOGINFO("test"_status)
              Set Result = [].%FromJSON(request.HttpResponse.Data)
             $$$LOGINFO("Data retrieved :"_Result.%ToJSON())
@@ -354,7 +437,7 @@
 </Class>
 
 
-<Document name="EnsExportNotes.EnsExportProduction_2021-12-07 14-57-57_023+0.PTD"><ProjectTextDocument name="EnsExportNotes.EnsExportProduction_2021-12-07 14-57-57_023+0" description="Export Notes for export EnsExportProduction_2021-12-07 14-57-57_023+0">
+<Document name="EnsExportNotes.EnsExportProduction_2021-12-22 13-02-00_155+0.PTD"><ProjectTextDocument name="EnsExportNotes.EnsExportProduction_2021-12-22 13-02-00_155+0" description="Export Notes for export EnsExportProduction_2021-12-22 13-02-00_155+0">
 <![CDATA[<Deployment>
 <Creation>
 <Machine>VM-FOCH-PRODENSDOCT-FC.E0GGSE2BK4JUNJXVU0LO0JHO0D.PARX.INTERNAL.CLOUDAPP.NET</Machine>
@@ -362,12 +445,12 @@
 <Namespace>FOCHANAMNESE</Namespace>
 <SourceProduction>FOCHANAMNESE.NewProduction2</SourceProduction>
 <Username>UnknownUser</Username>
-<UTC>2021-12-07 14:58:36.516</UTC>
+<UTC>2021-12-22 13:03:26.239</UTC>
 </Creation>
 <Notes>
 </Notes>
 <Contents>
-<ExportProject>EnsExportProduction_2021-12-07 14-57-57_023+0</ExportProject>
+<ExportProject>EnsExportProduction_2021-12-22 13-02-00_155+0</ExportProject>
 <Item num="1">FOCHANAMNESE.RouteurSIU12RoutingRule.CLS</Item>
 <Item num="2">Settings:APISIUrendezvous.PTD</Item>
 <Item num="3">Settings:Email.PTD</Item>
@@ -384,7 +467,7 @@
 </Document>
 
 <Document name="Settings:APISIUrendezvous.PTD"><ProjectTextDocument name="Settings:APISIUrendezvous" description="Settings for APISIUrendezvous in Production FOCHANAMNESE.NewProduction2">
-<![CDATA[<Item Name="APISIUrendezvous" Category="" ClassName="User.AnamneseAPISIU" PoolSize="1" Enabled="true" Foreground="false" Comment="" LogTraceEvents="false" Schedule=""><Setting Target="Host" Name="FilePath">/home/WafikMA/input</Setting><Setting Target="Adapter" Name="Credentials"></Setting><Setting Target="Host" Name="Email">wafik.mahmoudi@synodis.fr</Setting><Setting Target="Host" Name="SSL">testWafik</Setting><Setting Target="Adapter" Name="SSLConfig"></Setting></Item>
+<![CDATA[<Item Name="APISIUrendezvous" Category="" ClassName="User.AnamneseAPISIU" PoolSize="1" Enabled="true" Foreground="false" Comment="" LogTraceEvents="false" Schedule=""><Setting Target="Host" Name="FilePath">/home/WafikMA/input</Setting><Setting Target="Adapter" Name="Credentials"></Setting><Setting Target="Host" Name="Email">wafik.mahmoudi@synodis.fr</Setting><Setting Target="Host" Name="SSL">testWafik</Setting><Setting Target="Adapter" Name="SSLConfig"></Setting><Setting Target="Host" Name="ServerHTTP">orl.preprod.anamnese.me</Setting><Setting Target="Host" Name="ServerHTTPToken">preprod.anamnese.me</Setting><Setting Target="Host" Name="URL">/api/consultation_hl7</Setting><Setting Target="Host" Name="URLToken">/api/token/</Setting></Item>
 ]]></ProjectTextDocument>
 </Document>
 
@@ -394,7 +477,7 @@
 </Document>
 
 <Document name="Settings:InputSIU.PTD"><ProjectTextDocument name="Settings:InputSIU" description="Settings for InputSIU in Production FOCHANAMNESE.NewProduction2">
-<![CDATA[<Item Name="InputSIU" Category="" ClassName="EnsLib.HL7.Service.FileService" PoolSize="1" Enabled="true" Foreground="false" Comment="" LogTraceEvents="false" Schedule=""><Setting Target="Adapter" Name="FileSpec">*.hl7</Setting><Setting Target="Adapter" Name="FilePath">/home/WafikMA/input</Setting><Setting Target="Host" Name="TargetConfigNames">Routeur_SIU12</Setting></Item>
+<![CDATA[<Item Name="InputSIU" Category="" ClassName="EnsLib.HL7.Service.TCPService" PoolSize="1" Enabled="true" Foreground="false" Comment="" LogTraceEvents="false" Schedule=""><Setting Target="Host" Name="MessageSchemaCategory"></Setting><Setting Target="Host" Name="TargetConfigNames">Routeur_SIU12</Setting><Setting Target="Adapter" Name="Port"></Setting></Item>
 ]]></ProjectTextDocument>
 </Document>
 
@@ -404,6 +487,6 @@
 </Document>
 
 <Document name="Settings:getTokenBS.PTD"><ProjectTextDocument name="Settings:getTokenBS" description="Settings for getTokenBS in Production FOCHANAMNESE.NewProduction2">
-<![CDATA[<Item Name="getTokenBS" Category="" ClassName="User.AnamnesegetToken" PoolSize="1" Enabled="true" Foreground="false" Comment="" LogTraceEvents="false" Schedule=""><Setting Target="Adapter" Name="CallInterval">7200</Setting><Setting Target="Host" Name="SSL">testWafik</Setting></Item>
+<![CDATA[<Item Name="getTokenBS" Category="" ClassName="User.AnamnesegetToken" PoolSize="1" Enabled="true" Foreground="false" Comment="" LogTraceEvents="false" Schedule=""><Setting Target="Adapter" Name="CallInterval">7200</Setting><Setting Target="Host" Name="SSL">testWafik</Setting><Setting Target="Host" Name="ServerHTTP">preprod.anamnese.me</Setting><Setting Target="Host" Name="URL">/api/token/</Setting></Item>
 ]]></ProjectTextDocument>
 </Document></Export>
